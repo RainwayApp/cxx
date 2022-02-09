@@ -3,13 +3,19 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    cc::Build::new()
+    let mut build = cc::Build::new();
+    build
         .file("src/cxx.cc")
         .cpp(true)
         .cpp_link_stdlib(None) // linked via link-cplusplus crate
         .flag_if_supported(cxxbridge_flags::STD)
-        .warnings_into_errors(cfg!(deny_warnings))
-        .compile("cxxbridge1");
+        .warnings_into_errors(cfg!(deny_warnings));
+
+    #[cfg(target_os = "windows")]
+    if std::env::var("DEBUG").map_or(false, |x| x == "true") {
+        build.flag("/MDd");
+    }
+    build.compile("cxxbridge1");
 
     println!("cargo:rerun-if-changed=src/cxx.cc");
     println!("cargo:rerun-if-changed=include/cxx.h");
